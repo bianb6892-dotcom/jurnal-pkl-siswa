@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jurnal PKL • Siswa</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    :root {
+      --pale-bg: #f7f4ee;
+      --pale-card: #fdfbf6;
+      --pale-border: #e8e2d4;
+      --pale-hover: #f0ebdd;
+      --accent: #b8860b;
+      --accent-soft: #d4a95c;
+      --danger: #b45309;
+      --danger-bg: #f5e6e0;
+    }
+
+    body {
+      background-color: var(--pale-bg);
+      background-image:
+        radial-gradient(circle at 20% 10%, rgba(212, 169, 92, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 80% 90%, rgba(184, 134, 11, 0.06) 0%, transparent 40%);
+      font-size: 13px;
+    }
+
+    .pale-card { background-color: var(--pale-card); border-color: var(--pale-border); }
+    .pale-input { background-color: #fdfbf6; border-color: var(--pale-border); font-size: 12px; }
+    .pale-input:focus {
+      border-color: var(--accent-soft);
+      box-shadow: 0 0 0 2px rgba(212, 169, 92, 0.2);
+    }
+
+    .nav-tab { transition: all 0.25s ease; color: #8a7f6b; font-size: 12px; }
+    .nav-tab:hover { background-color: var(--pale-hover); color: var(--accent); }
+    .nav-tab.active {
+      background-color: var(--accent); color: #fff;
+      box-shadow: 0 3px 8px -4px rgba(184, 134, 11, 0.5);
+    }
+
+    .page { display: none; }
+    .page.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .gallery-item {
+      filter: grayscale(100%);
+      transition: filter 0.35s ease, transform 0.25s ease, box-shadow 0.25s ease;
+      background-color: var(--pale-hover);
+      border-color: var(--pale-border);
+      position: relative;
+    }
+    .gallery-item:hover {
+      filter: grayscale(0%);
+      transform: scale(1.03);
+      box-shadow: 0 14px 22px -10px rgba(120, 90, 30, 0.35);
+    }
+
+    /* Tombol hapus di gallery */
+    .btn-delete-gallery {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(180, 83, 9, 0.9);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 10;
+      border: none;
+      cursor: pointer;
+    }
+    .gallery-item:hover .btn-delete-gallery {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+    .btn-delete-gallery:hover {
+      background: #b45309;
+    }
+
+    .card-jurnal {
+      background-color: #fdfbf6;
+      border-color: var(--pale-border);
+      transition: all 0.2s;
+    }
+    .card-jurnal:hover {
+      background-color: #faf6ec;
+      box-shadow: 0 6px 12px -8px rgba(120, 90, 30, 0.15);
+    }
+
+    .btn-icon { padding: 6px; font-size: 12px; border-radius: 6px; }
+
+    #jurnalList::-webkit-scrollbar { width: 5px; }
+    #jurnalList::-webkit-scrollbar-thumb { background: var(--pale-border); border-radius: 3px; }
+
+    .section-title { font-size: 14px; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(60, 45, 20, 0.5);
+      backdrop-filter: blur(2px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 16px;
+    }
+    .modal-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
+    .modal-box {
+      background: var(--pale-card);
+      border: 1px solid var(--pale-border);
+      border-radius: 12px;
+      max-width: 420px;
+      width: 100%;
+      padding: 20px;
+      box-shadow: 0 20px 40px -12px rgba(90, 74, 42, 0.35);
+      animation: popIn 0.25s ease;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* Admin badge */
+    .admin-badge {
+      background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+      color: #fff;
+    }
+
+    /* Upload preview */
+    .upload-preview {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 2px dashed var(--pale-border);
+      background: var(--pale-hover);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a89b85;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .upload-preview:hover {
+      border-color: var(--accent-soft);
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body class="font-sans antialiased p-3 md:p-4 min-h-screen">
+
+  <div class="max-w-5xl mx-auto">
+    <!-- Header -->
+    <header class="flex items-center gap-2.5 mb-4 pb-3 border-b" style="border-color: var(--pale-border);">
+      <div class="p-1.5 rounded-lg" style="background: var(--accent);">
+        <i class="fa-solid fa-book-open text-base text-white"></i>
+      </div>
+      <div>
+        <h1 class="text-lg md:text-xl font-bold" style="color: #5a4a2a;">Jurnal PKL</h1>
+        <p class="text-[11px]" style="color: #a89b85;">Catatan kegiatan praktik kerja lapangan</p>
+      </div>
+
+      <!-- Login / Admin status -->
+      <div class="ml-auto flex items-center gap-2">
+        <span id="userBadge" class="text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1"
+              style="background: var(--pale-hover); color: var(--accent);">
+          <i class="fa-regular fa-user"></i> Siswa
+        </span>
+        <button id="loginBtn" class="text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 transition hover:opacity-90"
+                style="background: var(--accent); color: #fff;">
+          <i class="fa-solid fa-right-to-bracket"></i> Login Admin
+        </button>
+        <button id="logoutBtn" class="hidden text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 transition hover:opacity-90"
+                style="background: var(--danger-bg); color: var(--danger);">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+      </div>
+    </header>
+
+    <!-- Navigasi Tab -->
+    <nav class="flex gap-1.5 mb-4 p-1 rounded-lg w-fit" style="background: var(--pale-hover);">
+      <button id="tabJurnal" class="nav-tab active px-3.5 py-1.5 rounded-md font-medium flex items-center gap-1.5">
+        <i class="fa-regular fa-calendar-check"></i> Jurnal
+      </button>
+      <button id="tabGallery" class="nav-tab px-3.5 py-1.5 rounded-md font-medium flex items-center gap-1.5">
+        <i class="fa-regular fa-images"></i> Gallery
+      </button>
+    </nav>
+
+    <!-- ================= HALAMAN JURNAL ================= -->
+    <div id="pageJurnal" class="page active">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div class="lg:col-span-1 space-y-3">
+          <div class="pale-card rounded-lg shadow-sm p-3.5 border">
+            <h2 class="section-title font-semibold flex items-center gap-1.5 mb-3" style="color: #5a4a2a;">
+              <i class="fa-regular fa-pen-to-square" style="color: var(--accent);"></i> 
+              <span id="formTitle">Tambah Kegiatan</span>
+            </h2>
+            <form id="jurnalForm" class="space-y-2.5">
+              <input type="hidden" id="editId" value="">
+              <div>
+                <label class="block text-[11px] font-medium mb-1" style="color: #7a6f5a;">Tanggal</label>
+                <input type="date" id="tanggal" required
+                       class="pale-input w-full border rounded-md px-2.5 py-1.5 outline-none transition">
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium mb-1" style="color: #7a6f5a;">Kegiatan</label>
+                <input type="text" id="kegiatan" placeholder="Contoh: Membuat laporan" required
+                       class="pale-input w-full border rounded-md px-2.5 py-1.5 outline-none transition">
+              </div>
+              <div>
+                <label class="block text-[11px] font-medium mb-1" style="color: #7a6f5a;">Deskripsi</label>
+                <textarea id="deskripsi" rows="2" placeholder="Detail kegiatan..."
+                          class="pale-input w-full border rounded-md px-2.5 py-1.5 outline-none transition resize-none"></textarea>
+              </div>
+              <div class="flex gap-2 pt-1">
+                <button type="submit"
+                        class="flex-1 text-white font-medium py-1.5 rounded-md transition flex items-center justify-center gap-1.5 hover:opacity-90 text-xs"
+                        style="background: var(--accent);">
+                  <i class="fa-regular fa-floppy-disk"></i> Simpan
+                </button>
+                <button type="button" id="cancelEditBtn"
+                        class="hidden flex-1 font-medium py-1.5 rounded-md transition items-center justify-center gap-1.5 hover:opacity-80 text-xs"
+                        style="background: var(--pale-hover); color: #7a6f5a;">
+                  <i class="fa-solid fa-xmark"></i> Batal
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="pale-card rounded-lg shadow-sm p-3.5 border">
+            <h2 class="section-title font-semibold flex items-center gap-1.5 mb-3" style="color: #5a4a2a;">
+              <i class="fa-solid fa-filter" style="color: var(--accent);"></i> Filter Tanggal
+            </h2>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <div class="flex-1">
+                <label class="block text-[10px] mb-0.5" style="color: #a89b85;">Dari</label>
+                <input type="date" id="filterStart"
+                       class="pale-input w-full border rounded-md px-2.5 py-1.5 outline-none">
+              </div>
+              <div class="flex-1">
+                <label class="block text-[10px] mb-0.5" style="color: #a89b85;">Sampai</label>
+                <input type="date" id="filterEnd"
+                       class="pale-input w-full border rounded-md px-2.5 py-1.5 outline-none">
+              </div>
+            </div>
+            <div class="flex gap-2 mt-2.5">
+              <button id="applyFilter"
+                      class="flex-1 text-white py-1.5 rounded-md transition flex items-center justify-center gap-1 hover:opacity-90 text-xs"
+                      style="background: #8a7f6b;">
+                <i class="fa-solid fa-magnifying-glass"></i> Terapkan
+              </button>
+              <button id="resetFilter"
+                      class="flex-1 py-1.5 rounded-md transition flex items-center justify-center gap-1 hover:opacity-80 text-xs"
+                      style="background: var(--pale-hover); color: #7a6f5a;">
+                <i class="fa-solid fa-rotate-left"></i> Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-2">
+          <div class="pale-card rounded-lg shadow-sm p-3.5 border h-full">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="section-title font-semibold flex items-center gap-1.5" style="color: #5a4a2a;">
+                <i class="fa-regular fa-calendar-check" style="color: var(--accent);"></i> Daftar Kegiatan
+              </h2>
+              <span id="jurnalCount"
+                    class="text-[10px] px-2 py-0.5 rounded-full"
+                    style="background: var(--pale-hover); color: var(--accent);">0 kegiatan</span>
+            </div>
+            <div id="jurnalList" class="space-y-2 max-h-[460px] overflow-y-auto pr-1">
+              <!-- Dirender JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= HALAMAN GALLERY ================= -->
+    <div id="pageGallery" class="page">
+      <div class="pale-card rounded-lg shadow-sm p-4 border">
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <h2 class="text-base font-semibold flex items-center gap-1.5" style="color: #5a4a2a;">
+            <i class="fa-regular fa-images" style="color: var(--accent);"></i> Gallery Kegiatan PKL
+          </h2>
+
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] px-2.5 py-0.5 rounded-full hidden sm:inline"
+                  style="background: var(--pale-hover); color: var(--accent);">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Hover untuk warna
+            </span>
+            <!-- Tombol tambah foto: hanya untuk admin -->
+            <button id="addPhotoBtn"
+                    class="hidden text-[11px] px-3 py-1.5 rounded-md transition flex items-center gap-1.5 hover:opacity-90 text-white"
+                    style="background: var(--accent);">
+              <i class="fa-solid fa-plus"></i> Tambah Foto
+            </button>
+          </div>
+        </div>
+
+        <div id="galleryGrid" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2.5">
+          <!-- Dirender JS -->
+        </div>
+
+        <div id="galleryEmpty" class="hidden text-center py-8 text-xs flex flex-col items-center gap-2" style="color: #a89b85;">
+          <i class="fa-regular fa-image text-2xl"></i>
+          Belum ada foto. <span id="emptyAdminHint" class="hidden">Klik "Tambah Foto" untuk upload.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 text-center text-[10px] flex items-center justify-center gap-1.5" style="color: #a89b85;">
+      <i class="fa-solid fa-database"></i> Data tersimpan otomatis di browser (localStorage)
+    </div>
+  </div>
+
+  <!-- ================= MODAL LOGIN ================= -->
+  <div id="loginModal" class="modal-overlay">
+    <div class="modal-box">
+      <h3 class="text-base font-semibold mb-1 flex items-center gap-2" style="color: #5a4a2a;">
+        <i class="fa-solid fa-lock" style="color: var(--accent);"></i> Login Admin
+      </h3>
+      <p class="text-[11px] mb-3" style="color: #a89b85;">Masukkan password untuk mengelola gallery.</p>
+      <input type="password" id="loginPassword" placeholder="Password admin..."
+             class="pale-input w-full border rounded-md px-3 py-2 outline-none mb-3">
+      <p id="loginError" class="text-[11px] mb-3 hidden" style="color: var(--danger);">
+        <i class="fa-solid fa-circle-exclamation"></i> Password salah!
+      </p>
+      <div class="flex gap-2">
+        <button id="loginSubmit" class="flex-1 text-white py-2 rounded-md text-xs font-medium hover:opacity-90 transition"
+                style="background: var(--accent);">
+          <i class="fa-solid fa-right-to-bracket"></i> Masuk
+        </button>
+        <button id="loginCancel" class="flex-1 py-2 rounded-md text-xs font-medium hover:opacity-80 transition"
+                style="background: var(--pale-hover); color: #7a6f5a;">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL UPLOAD FOTO ================= -->
+  <div id="uploadModal" class="modal-overlay">
+    <div class="modal-box">
+      <h3 class="text-base font-semibold mb-3 flex items-center gap-2" style="color: #5a4a2a;">
+        <i class="fa-solid fa-cloud-arrow-up" style="color: var(--accent);"></i> Tambah Foto Gallery
+      </h3>
+
+      <input type="file" id="photoFile" accept="image/*" class="hidden">
+
+      <div id="uploadPreview" class="upload-preview mb-3" onclick="document.getElementById('photoFile').click()">
+        <div class="text-center">
+          <i class="fa-regular fa-image text-2xl mb-1"></i>
+          <p>Klik untuk pilih gambar</p>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="block text-[11px] font-medium mb-1" style="color: #7a6f5a;">Judul Foto</label>
+        <input type="text" id="photoTitle" placeholder="Contoh: Survey lokasi"
+               class="pale-input w-full border rounded-md px-2.5 py-1.5 outline-none">
+      </div>
+
+      <div class="flex gap-2">
+        <button id="uploadSubmit" class="flex-1 text-white py-2 rounded-md text-xs font-medium hover:opacity-90 transition"
+                style="background: var(--accent);">
+          <i class="fa-solid fa-check"></i> Simpan
+        </button>
+        <button id="uploadCancel" class="flex-1 py-2 rounded-md text-xs font-medium hover:opacity-80 transition"
+                style="background: var(--pale-hover); color: #7a6f5a;">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // ============ KONFIGURASI ============
+      const ADMIN_PASSWORD = 'admin123'; // <-- ganti sesuai keinginan
+      const JURNAL_KEY = 'jurnal_pkl_data';
+      const GALLERY_KEY = 'jurnal_pkl_gallery';
+      const AUTH_KEY = 'jurnal_pkl_admin'; // session flag
+
+      // ============ STATE ============
+      let isAdmin = sessionStorage.getItem(AUTH_KEY) === '1';
+      let uploadedImageBase64 = null;
+
+      // ============ UTIL ============
+      function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+      }
+
+      // ============ JURNAL DATA ============
+      function loadJurnal() {
+        try {
+          const saved = localStorage.getItem(JURNAL_KEY);
+          if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return [
+          { id: 1, tanggal: '2025-01-10', kegiatan: 'Orientasi tempat PKL', deskripsi: 'Perkenalan dengan pembimbing dan staf' },
+          { id: 2, tanggal: '2025-01-12', kegiatan: 'Membuat laporan harian', deskripsi: 'Menyusun format laporan kegiatan' },
+          { id: 3, tanggal: '2025-01-15', kegiatan: 'Belajar software baru', deskripsi: 'Menggunakan aplikasi desain grafis' },
+          { id: 4, tanggal: '2025-01-18', kegiatan: 'Rapat koordinasi', deskripsi: 'Diskusi proyek dengan tim' },
+        ];
+      }
+      function saveJurnal() {
+        try { localStorage.setItem(JURNAL_KEY, JSON.stringify(jurnalData)); } catch (e) {}
+      }
+      let jurnalData = loadJurnal();
+
+      // ============ GALLERY DATA ============
+      function loadGallery() {
+        try {
+          const saved = localStorage.getItem(GALLERY_KEY);
+          if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        // Default gallery dari URL (bukan base64)
+        return [
+          { id: 1, title: 'Survey lokasi', src: 'https://picsum.photos/id/1015/400/400' },
+          { id: 2, title: 'Diskusi tim', src: 'https://picsum.photos/id/1043/400/400' },
+          { id: 3, title: 'Presentasi', src: 'https://picsum.photos/id/1062/400/400' },
+          { id: 4, title: 'Workshop', src: 'https://picsum.photos/id/1074/400/400' },
+          { id: 5, title: 'Kunjungan industri', src: 'https://picsum.photos/id/1080/400/400' },
+          { id: 6, title: 'Laporan akhir', src: 'https://picsum.photos/id/1084/400/400' },
+          { id: 7, title: 'Rapat', src: 'https://picsum.photos/id/1024/400/400' },
+          { id: 8, title: 'Dokumentasi', src: 'https://picsum.photos/id/1050/400/400' },
+        ];
+      }
+      function saveGallery() {
+        try {
+          localStorage.setItem(GALLERY_KEY, JSON.stringify(galleryData));
+        } catch (e) {
+          alert('Gagal menyimpan. Kemungkinan memori browser penuh. Coba hapus beberapa foto.');
+        }
+      }
+      let galleryData = loadGallery();
+
+      // ============ DOM ============
+      const jurnalForm = document.getElementById('jurnalForm');
+      const editIdInput = document.getElementById('editId');
+      const tanggalInput = document.getElementById('tanggal');
+      const kegiatanInput = document.getElementById('kegiatan');
+      const deskripsiInput = document.getElementById('deskripsi');
+      const formTitle = document.getElementById('formTitle');
+      const cancelEditBtn = document.getElementById('cancelEditBtn');
+      const jurnalList = document.getElementById('jurnalList');
+      const jurnalCount = document.getElementById('jurnalCount');
+      const filterStart = document.getElementById('filterStart');
+      const filterEnd = document.getElementById('filterEnd');
+      const applyFilterBtn = document.getElementById('applyFilter');
+      const resetFilterBtn = document.getElementById('resetFilter');
+
+      const tabJurnal = document.getElementById('tabJurnal');
+      const tabGallery = document.getElementById('tabGallery');
+      const pageJurnal = document.getElementById('pageJurnal');
+      const pageGallery = document.getElementById('pageGallery');
+
+      const galleryGrid = document.getElementById('galleryGrid');
+      const galleryEmpty = document.getElementById('galleryEmpty');
+      const addPhotoBtn = document.getElementById('addPhotoBtn');
+      const emptyAdminHint = document.getElementById('emptyAdminHint');
+
+      const userBadge = document.getElementById('userBadge');
+      const loginBtn = document.getElementById('loginBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
+
+      const loginModal = document.getElementById('loginModal');
+      const loginPassword = document.getElementById('loginPassword');
+      const loginError = document.getElementById('loginError');
+      const loginSubmit = document.getElementById('loginSubmit');
+      const loginCancel = document.getElementById('loginCancel');
+
+      const uploadModal = document.getElementById('uploadModal');
+      const photoFile = document.getElementById('photoFile');
+      const uploadPreview = document.getElementById('uploadPreview');
+      const photoTitle = document.getElementById('photoTitle');
+      const uploadSubmit = document.getElementById('uploadSubmit');
+      const uploadCancel = document.getElementById('uploadCancel');
+
+      // ============ TAB NAVIGASI ============
+      function showPage(page) {
+        pageJurnal.classList.remove('active');
+        pageGallery.classList.remove('active');
+        tabJurnal.classList.remove('active');
+        tabGallery.classList.remove('active');
+        if (page === 'jurnal') {
+          pageJurnal.classList.add('active');
+          tabJurnal.classList.add('active');
+        } else {
+          pageGallery.classList.add('active');
+          tabGallery.classList.add('active');
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      tabJurnal.addEventListener('click', () => showPage('jurnal'));
+      tabGallery.addEventListener('click', () => showPage('gallery'));
+
+      // ============ ADMIN STATUS ============
+      function updateAdminUI() {
+        if (isAdmin) {
+          userBadge.innerHTML = '<i class="fa-solid fa-user-shield"></i> Admin';
+          userBadge.className = 'text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1 admin-badge';
+          loginBtn.classList.add('hidden');
+          logoutBtn.classList.remove('hidden');
+          logoutBtn.classList.add('flex');
+          addPhotoBtn.classList.remove('hidden');
+          addPhotoBtn.classList.add('flex');
+          emptyAdminHint.classList.remove('hidden');
+        } else {
+          userBadge.innerHTML = '<i class="fa-regular fa-user"></i> Siswa';
+          userBadge.className = 'text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1';
+          userBadge.style.background = 'var(--pale-hover)';
+          userBadge.style.color = 'var(--accent)';
+          loginBtn.classList.remove('hidden');
+          logoutBtn.classList.add('hidden');
+          logoutBtn.classList.remove('flex');
+          addPhotoBtn.classList.add('hidden');
+          addPhotoBtn.classList.remove('flex');
+          emptyAdminHint.classList.add('hidden');
+        }
+      }
+
+      loginBtn.addEventListener('click', () => {
+        loginModal.classList.add('show');
+        loginPassword.value = '';
+        loginError.classList.add('hidden');
+        setTimeout(() => loginPassword.focus(), 100);
+      });
+
+      loginCancel.addEventListener('click', () => loginModal.classList.remove('show'));
+      loginModal.addEventListener('click', (e) => {
+        if (e.target === loginModal) loginModal.classList.remove('show');
+      });
+
+      function doLogin() {
+        if (loginPassword.value === ADMIN_PASSWORD) {
+          isAdmin = true;
+          sessionStorage.setItem(AUTH_KEY, '1');
+          loginModal.classList.remove('show');
+          updateAdminUI();
+          renderGallery();
+        } else {
+          loginError.classList.remove('hidden');
+          loginPassword.select();
+        }
+      }
+      loginSubmit.addEventListener('click', doLogin);
+      loginPassword.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doLogin();
+      });
+
+      logoutBtn.addEventListener('click', () => {
+        isAdmin = false;
+        sessionStorage.removeItem(AUTH_KEY);
+        updateAdminUI();
+        renderGallery();
+      });
+
+      // ============ JURNAL RENDER ============
+      function renderJurnal(filterStartDate = null, filterEndDate = null) {
+        let filteredData = [...jurnalData];
+        if (filterStartDate) filteredData = filteredData.filter(item => item.tanggal >= filterStartDate);
+        if (filterEndDate) filteredData = filteredData.filter(item => item.tanggal <= filterEndDate);
+        filteredData.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+
+        jurnalCount.textContent = `${filteredData.length} kegiatan`;
+
+        if (filteredData.length === 0) {
+          jurnalList.innerHTML = `
+            <div class="text-center py-6 text-xs flex flex-col items-center gap-1.5" style="color: #a89b85;">
+              <i class="fa-regular fa-folder-open text-lg"></i>
+              Tidak ada kegiatan yang sesuai filter.
+            </div>`;
+          return;
+        }
+
+        let html = '';
+        filteredData.forEach(item => {
+          const tglObj = new Date(item.tanggal + 'T00:00:00');
+          const tglTampil = tglObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+          html += `
+            <div class="card-jurnal border rounded-md p-2.5 flex flex-row items-start gap-2">
+              <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-1.5 text-[11px]" style="color: #8a7f6b;">
+                  <i class="fa-regular fa-calendar" style="color: var(--accent-soft);"></i>
+                  <span class="font-medium" style="color: #5a4a2a;">${tglTampil}</span>
+                </div>
+                <h3 class="font-semibold mt-0.5 break-words text-[13px]" style="color: #3d3223;">${escapeHtml(item.kegiatan)}</h3>
+                <p class="text-[11px] mt-0.5 break-words leading-snug" style="color: #7a6f5a;">${escapeHtml(item.deskripsi || '-')}</p>
+              </div>
+              <div class="flex flex-col gap-1.5 shrink-0">
+                <button onclick="editJurnal(${item.id})"
+                        class="btn-icon transition hover:opacity-80"
+                        style="background: #f0ebdd; color: var(--accent);" title="Edit">
+                  <i class="fa-regular fa-pen-to-square"></i>
+                </button>
+                <button onclick="hapusJurnal(${item.id})"
+                        class="btn-icon transition hover:opacity-80"
+                        style="background: #f5e6e0; color: #b45309;" title="Hapus">
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              </div>
+            </div>`;
+        });
+        jurnalList.innerHTML = html;
+      }
+
+      // ============ GALLERY RENDER ============
+      function renderGallery() {
+        if (galleryData.length === 0) {
+          galleryGrid.innerHTML = '';
+          galleryEmpty.classList.remove('hidden');
+          galleryEmpty.classList.add('flex');
+          return;
+        }
+        galleryEmpty.classList.add('hidden');
+        galleryEmpty.classList.remove('flex');
+
+        let html = '';
+        galleryData.forEach(item => {
+          // Tombol hapus hanya untuk admin
+          const deleteBtn = isAdmin
+            ? `<button class="btn-delete-gallery" onclick="hapusFoto(${item.id})" title="Hapus foto">
+                 <i class="fa-solid fa-xmark"></i>
+               </button>`
+            : '';
+          html += `
+            <div class="gallery-item rounded-lg overflow-hidden shadow-sm aspect-square flex flex-col p-1.5 border">
+              ${deleteBtn}
+              <div class="flex-1 rounded-md overflow-hidden">
+                <img src="${item.src}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover" loading="lazy">
+              </div>
+              <p class="text-[10px] text-center mt-1 font-medium truncate" style="color: #5a4a2a;">${escapeHtml(item.title)}</p>
+            </div>`;
+        });
+        galleryGrid.innerHTML = html;
+      }
+
+      // ============ HAPUS FOTO ============
+      window.hapusFoto = function(id) {
+        if (!isAdmin) return;
+        if (!confirm('Yakin ingin menghapus foto ini?')) return;
+        galleryData = galleryData.filter(item => item.id !== id);
+        saveGallery();
+        renderGallery();
+      };
+
+      // ============ TAMBAH FOTO ============
+      addPhotoBtn.addEventListener('click', () => {
+        if (!isAdmin) return;
+        photoFile.value = '';
+        photoTitle.value = '';
+        uploadedImageBase64 = null;
+        uploadPreview.innerHTML = `
+          <div class="text-center">
+            <i class="fa-regular fa-image text-2xl mb-1"></i>
+            <p>Klik untuk pilih gambar</p>
+          </div>`;
+        uploadModal.classList.add('show');
+      });
+
+      uploadCancel.addEventListener('click', () => {
+        uploadModal.classList.remove('show');
+      });
+      uploadModal.addEventListener('click', (e) => {
+        if (e.target === uploadModal) uploadModal.classList.remove('show');
+      });
+
+      // Preview setelah pilih file
+      photoFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validasi tipe
+        if (!file.type.startsWith('image/')) {
+          alert('File harus berupa gambar!');
+          return;
+        }
+        // Validasi ukuran (max 2MB agar tidak cepat penuh localStorage)
+        if (file.size > 2 * 1024 * 1024) {
+          alert('Ukuran gambar terlalu besar. Maksimal 2MB.');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          uploadedImageBase64 = ev.target.result;
+          uploadPreview.innerHTML = `<img src="${uploadedImageBase64}" class="w-full h-full object-cover rounded-md">`;
+          // Auto-isi judul jika kosong
+          if (!photoTitle.value) {
+            photoTitle.value = file.name.replace(/\.[^.]+$/, '');
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+
+      uploadSubmit.addEventListener('click', () => {
+        if (!uploadedImageBase64) {
+          alert('Pilih gambar terlebih dahulu!');
+          return;
+        }
+        const title = photoTitle.value.trim() || 'Tanpa judul';
+        galleryData.push({
+          id: Date.now(),
+          title: title,
+          src: uploadedImageBase64
+        });
+        saveGallery();
+        renderGallery();
+        uploadModal.classList.remove('show');
+      });
+
+      // ============ JURNAL: SUBMIT / EDIT / HAPUS ============
+      jurnalForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = editIdInput.value;
+        const tanggal = tanggalInput.value;
+        const kegiatan = kegiatanInput.value.trim();
+        const deskripsi = deskripsiInput.value.trim();
+        if (!tanggal || !kegiatan) { alert('Tanggal dan kegiatan wajib diisi!'); return; }
+
+        if (id) {
+          const index = jurnalData.findIndex(item => item.id == id);
+          if (index !== -1) jurnalData[index] = { ...jurnalData[index], tanggal, kegiatan, deskripsi };
+        } else {
+          jurnalData.push({ id: Date.now(), tanggal, kegiatan, deskripsi });
+        }
+        saveJurnal();
+        resetForm();
+        renderJurnal(filterStart.value || null, filterEnd.value || null);
+      });
+
+      window.editJurnal = function(id) {
+        const item = jurnalData.find(d => d.id === id);
+        if (!item) return;
+        editIdInput.value = item.id;
+        tanggalInput.value = item.tanggal;
+        kegiatanInput.value = item.kegiatan;
+        deskripsiInput.value = item.deskripsi || '';
+        formTitle.textContent = 'Edit Kegiatan';
+        cancelEditBtn.classList.remove('hidden');
+        cancelEditBtn.classList.add('flex');
+        document.querySelector('.pale-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      };
+
+      window.hapusJurnal = function(id) {
+        if (!confirm('Yakin ingin menghapus kegiatan ini?')) return;
+        jurnalData = jurnalData.filter(item => item.id !== id);
+        if (editIdInput.value == id) resetForm();
+        saveJurnal();
+        renderJurnal(filterStart.value || null, filterEnd.value || null);
+      };
+
+      function resetForm() {
+        editIdInput.value = '';
+        tanggalInput.value = todayStr;
+        kegiatanInput.value = '';
+        deskripsiInput.value = '';
+        formTitle.textContent = 'Tambah Kegiatan';
+        cancelEditBtn.classList.add('hidden');
+        cancelEditBtn.classList.remove('flex');
+      }
+      cancelEditBtn.addEventListener('click', resetForm);
+
+      applyFilterBtn.addEventListener('click', () => {
+        renderJurnal(filterStart.value || null, filterEnd.value || null);
+      });
+      resetFilterBtn.addEventListener('click', () => {
+        filterStart.value = '';
+        filterEnd.value = '';
+        renderJurnal(null, null);
+      });
+
+      // ============ INIT ============
+      const todayStr = new Date().toISOString().split('T')[0];
+      tanggalInput.value = todayStr;
+      tanggalInput.max = todayStr;
+
+      updateAdminUI();
+      renderJurnal();
+      renderGallery();
+    })();
+  </script>
+</body>
+</html>
